@@ -16,6 +16,7 @@ const orderRoutes = require('./routes/orderRoutes.js');
 const authRoutes = require('./routes/authRoutes.js');
 const contactRoutes = require('./routes/contactRoutes.js');
 
+
 require('dotenv').config();
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/kingsmen-pastries';
@@ -26,10 +27,6 @@ mongoose.connect(MONGO_URI, {
 })
 .then(() => console.log("MongoDB connected"))
 .catch(err => console.log(err));
-
-
-
-
 
 app.use(express.json());
 app.use('/api/orders', orderRoutes);
