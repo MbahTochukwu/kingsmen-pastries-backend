@@ -13,6 +13,11 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Ping endpoint
+router.get('/ping', (req, res) => {
+  res.status(200).json({ message: 'Server is alive' });
+});
+
 router.post('/', async (req, res) => {
   const order = new Order({
     customerName: req.body.customerName,
@@ -54,10 +59,8 @@ router.patch('/:id/fulfill', async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
-
     order.isFulfilled = true;
     await order.save();
-
     res.json({ message: 'Order marked as fulfilled', order });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -70,7 +73,6 @@ router.delete('/:id', async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
-
     res.json({ message: 'Order deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -126,7 +128,7 @@ router.post('/checkout', async (req, res) => {
 
 const stampsValueInNaira = 200;
 
-router.post('/order', async (req, res) => {
+router.post('/order',  async (req, res) => {
   const { items, totalPrice, stampsToUse } = req.body;
   const userId = req.user.id;
 
@@ -162,7 +164,7 @@ router.post('/order', async (req, res) => {
 
 
 // POST /api/order
-router.post('/order', async (req, res) => {
+router.post('/order', protect,  async (req, res) => {
   try {
     const { fullName, email, address, phone, payment, items, total, appliedStamps, finalAmount } = req.body;
     const order = new Order({
@@ -178,6 +180,7 @@ router.post('/order', async (req, res) => {
         total: item.price * item.qty
       })),
       total,
+      userId,
       discount: appliedStamps * 200,
       stampsUsed: appliedStamps,
       finalAmount,
@@ -189,5 +192,6 @@ router.post('/order', async (req, res) => {
     res.status(500).json({ error: 'Failed to place order' });
   }
 });
+
 
 module.exports = router;
