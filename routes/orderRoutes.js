@@ -13,6 +13,87 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Nodemailer setup
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  }
+});
+
+// Notification for site visit or login
+router.post('/notify-visit', async (req, res) => {
+  const { email, name } = req.body;
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: 'kingsmenpastries@gmail.com', // Your email to receive notifications
+    subject: 'New Site Visit or Login',
+    text: `User ${name || 'Unknown'} (${email || 'No email'}) has visited or logged into Kingsmen Pastries at ${new Date().toLocaleString()}.`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: 'Notification sent' });
+  } catch (err) {
+    console.error('Error sending visit notification:', err);
+    res.status(500).json({ message: 'Failed to send notification' });
+  }
+});
+
+
+// Order creation with notification
+router.post('/orders', protect, async (req, res) => {
+  const { customerName, email, address, phone, paymentMethod, items, total, userId, appliedStamps, orderNumber, paymentRef } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ message: 'Order validation failed: userId is required' });
+  }
+ try {
+    const order = new Order({
+      customerName,
+      email,
+      address,
+      phone,
+      paymentMethod,
+      items: items.map(item => ({
+        item: item.item,
+        price: item.price,
+        qty: item.qty,
+        total: item.price * item.qty,
+      })),
+      total,
+      userId,
+      discount: appliedStamps * 200,
+      stampsUsed: appliedStamps,
+      finalAmount: total - (appliedStamps * 200),
+      orderNumber,
+      paymentRef,
+    });
+    const newOrder = await order.save();
+
+    // Send email notification for new order
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: 'your-email@example.com', // Your email to receive notifications
+   subject: `New Order #${orderNumber}`,
+   text: `New order placed by ${customerName} (${email}) at ${new Date().toLocaleString
+    ()}.\n\nDetails:\nAddress: ${address}\nPhone: ${phone}\nItems: ${items
+      .map(item => `${item.item} x${item.qty} - ₦${item.price * item.qty}`)
+      .join('\n')}\nTotal: ₦${total}\nDiscount: ₦${appliedStamps * 200}\nFinal Amount: ₦$
+      {total - (appliedStamps * 200)}`,
+      };
+      await transporter.sendMail(mailOptions);
+
+    res.status(201).json(newOrder);
+  } catch (err) {
+    console.error('Error placing order or sending notification:', err);
+    res.status(400).json({ message: err.message });
+  }
+});
+
+
 // Ping endpoint
 router.get('/ping', (req, res) => {
   res.status(200).json({ message: 'Server is alive' });

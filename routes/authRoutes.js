@@ -142,11 +142,13 @@ router.post('/google-login', async (req, res) => {
   }
 });
 
+
+// Nodemailer setup
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'kingsmenpastries@gmail.com',
-    pass: 'ojrz xvom abhb txte'
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   }
 });
 
